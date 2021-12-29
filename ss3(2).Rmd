@@ -1,0 +1,297 @@
+---
+title: "Superconductors"
+output:
+  word_document: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+library("knitr")
+knitr::opts_chunk$set(echo = TRUE, message = TRUE)
+```
+
+## R Markdown
+
+# This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+# When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+summary(train4)
+
+## Including Plots
+
+# You can also embed plots, for example:
+```{r Correlogram}
+library(readxl)
+train4 <- read_excel("train4.xlsx")
+View(train4)
+library("corrplot")
+corr_matrix <- cor(train4)
+
+# create a new df and order columns alphabetically
+train4_new <- train4[, order(colnames(train4))]
+
+# correlation
+train4_new.mat <- cor(train4_new)
+
+# remove unwanted rows and columns from the correlation matrix
+train4_new_mat <- train4_new.mat[42:82, 1:41] #41 x 41 square correlation
+
+# run plot
+corrplot(
+  train4_new_mat,
+  title = "Heat Map",
+  method = "circle",
+  type = "full",
+  tl.col = "black",
+  order = "hclust",
+  hclust.method = "ward.D2",
+  tl.cex = 1.2,
+  cl.cex=1.2,
+  outline = T,
+  mar=c(0,0,4,5),
+  sig.level = 0.05,
+
+)
+```
+```{r heatmap lower}
+# with numbers and lower
+corrplot(corr_matrix,
+         method = 'number',
+         type = "lower")
+```
+
+```{r Heat Map lower}
+library("corrplot")
+cr <- cor(train4)
+#corrplot(cr)
+corrplot(cr, type="upper")
+```
+```{r Normalization}
+
+min_max <- function(x){
+  res <- (x - min(x))/(max(x)-min(x))
+  return(res)
+}
+newd<- as.data.frame(sapply(train4[,1:82],min_max))
+
+
+summary(newd)
+```
+
+
+
+
+```{r PCA summary by std and var}
+library("factoextra")
+library("FactoMineR")
+
+
+# before the PCA analysis
+res.pca <- prcomp(train4[,c(1:81)],  scale = TRUE)
+summary(res.pca)
+```
+```{r eigVal}
+# Extract the  eigenvalues/variances
+
+res.pca<-prcomp(train4,scale. = TRUE)
+```
+```{r PCA}
+pca <- PCA(train4, scale.unit=TRUE, ncp=5, graph=T)
+
+```
+```{r dimension describe}
+dimdesc(pca, proba = 0.05)[1:3]
+```
+```{r creating new df with reduced features}
+# creating new df with reduced features
+dfnew = data.frame()
+dfnew <- train4[,c("range_fie" , "range_atomic_radius" , "wtd_entropy_atomic_radius" , "wtd_std_fie" 
+             , "wtd_std_atomic_radius" , "entropy_Valence" , "wtd_entropy_atomic_mass" , "entropy_fie" 
+             , "wtd_entropy_Valence"
+             , "number_of_elements" , "wtd_gmean_Density" , "std_fie" , "entropy_atomic_radius" , "gmean_Density" 
+             , "std_atomic_mass" , "wtd_gmean_Valence" , "entropy_atomic_mass" , "mean_atomic_radius" 
+             , "gmean_atomic_radius" 
+             , "mean_atomic_mass" , "gmean_atomic_mass" , "std_FusionHeat" , "wtd_std_FusionHeat" 
+             , "wtd_mean_atomic_mass" 
+             , "range_FusionHeat" , "wtd_gmean_atomic_mass" , "mean_fie" , "gmean_fie" , "wtd_entropy_atomic_radius" 
+             , "entropy_FusionHeat" , "mean_Density" , "wtd_range_FusionHeat" , "wtd_mean_FusionHeat" 
+             , "wtd_gmean_atomic_radius")]
+head(dfnew)
+```
+```{r new corrplot heatmap}
+dfnew_matrix <- cor(dfnew)
+dfnew_new <- dfnew[, order(colnames(dfnew))]
+
+# correlation
+dfnew_new.mat <- cor(dfnew_new)
+
+# remove unwanted rows and columns from the correlation matrix
+dfnew_new_mat <- dfnew_new.mat[18:34, 1:17] #41 x 41 square correlation
+
+# run plot
+corrplot(
+  dfnew_new_mat,
+  title = "Heat Map",
+  method = "circle",
+  type = "full",
+  tl.col = "black",
+  order = "hclust",
+  hclust.method = "ward.D2",
+  tl.cex = 1.2,
+  cl.cex=1.2,
+  outline = T,
+  mar=c(0,0,4,5),
+  sig.level = 0.05,
+
+)
+```
+```{r dim 1 histogram}
+fviz_contrib(res.pca, choice = "var", axes = 1, top = 17)
+```
+```{r dim 2 histogram}
+# Contributions of variables to PC2
+fviz_contrib(res.pca, choice = "var", axes = 2, top = 17)
+```
+```{r dim 1 and dim 2 histogram}
+fviz_contrib(res.pca, choice = "var", axes = 1:2, top = 17)
+```
+```{r factor analysis colored}
+fviz_pca_var(res.pca, col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07")
+             )
+
+  
+```
+
+
+
+```{r PCA Visualization}
+library("factoextra")
+fviz_eig(res.pca)
+```
+```{r dimension eigennvalues and variance}
+get_eig(res.pca)
+```
+```{r ploting 2 dimensions}
+fviz_pca_ind(res.pca,
+             col.ind = "cos2", # Color by the quality of representation
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE  # Avoid text overlapping
+)
+
+```
+```{r factor analysis}
+fviz_pca_var(res.pca,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE   # Avoid text overlapping
+)
+```
+
+
+```{r screeplot}
+pr_var <-  res.pca$sdev ^ 2
+pve <- pr_var / sum(pr_var)
+plot(pve, xlab = "Principal Component", ylab = "Proportion of Variance Explained", ylim = c(0,1), type = 'b')
+```
+```{r cumulative}
+# Cumulative PVE plot
+plot(cumsum(pve), xlab = "Principal Component", ylab = "Cumulative Proportion of Variance Explained", ylim =c(0,1), type = 'b')
+# Rotate loadings
+```
+
+
+```{r geompoints}
+library(ggplot2)
+theme_set(theme_bw())
+
+homes.pca <- data.frame(res.pca$x[, 1:2]) # we only need the first two principal components
+ggplot(homes.pca, aes(y = PC1, x = PC2)) + geom_point(col = 'tomato2')
+```
+
+
+```{r pairplots of pca components }
+comp <- data.frame(res.pca$x[,1:5])
+# Plot
+plot(comp, pch=16, col=rgb(0,0,0,0.5))
+```
+
+```{r 3d Plot between pc1, 2 and 3}
+
+library(rgl)
+# Multi 3D plot
+plot3d(comp$PC1, comp$PC2, comp$PC3)
+```
+```{r 3d Plot between pc1, 3 and 4}
+plot3d(comp$PC1, comp$PC3, comp$PC4)
+```
+
+```{r k_mean}
+# From scree plot elbow occurs at k = 4
+# Apply k-means with k=4
+k <- kmeans(comp, 4, nstart=25, iter.max=1000)
+library(RColorBrewer)
+library(scales)
+palette(alpha(brewer.pal(9,'Set1'), 0.5))
+plot(comp, col=k$clust, pch=16)
+
+```
+```{r 3d plot after k mean}
+# 3D plot
+plot3d(comp$PC1, comp$PC2, comp$PC3, col=k$clust)
+```
+```{r 3d Plot after kmean}
+plot3d(comp$PC1, comp$PC3, comp$PC4, col=k$clust)
+```
+
+```{r regression}
+library(ggpubr)
+ggqqplot(train4$critical_temp)
+
+```
+
+```{r regression not appropriate but we have just shown}
+lmcriticaltemp = lm(critical_temp~range_fie + range_atomic_radius + wtd_entropy_atomic_radius + wtd_std_fie 
+             + wtd_std_atomic_radius + entropy_Valence + wtd_entropy_atomic_mass + entropy_fie + wtd_entropy_Valence
+             + number_of_elements + wtd_gmean_Density + std_fie + entropy_atomic_radius + gmean_Density 
+             + std_atomic_mass + wtd_gmean_Valence + entropy_atomic_mass + mean_atomic_radius + gmean_atomic_radius 
+             + mean_atomic_mass + gmean_atomic_mass + std_FusionHeat + wtd_std_FusionHeat + wtd_mean_atomic_mass 
+             + range_FusionHeat + wtd_gmean_atomic_mass + mean_fie + gmean_fie + wtd_entropy_atomic_radius 
+             + entropy_FusionHeat + mean_Density + wtd_range_FusionHeat + wtd_mean_FusionHeat 
+             + wtd_gmean_atomic_radius, data = train4)
+summary(lmcriticaltemp)
+
+```
+
+```{r regressiontree}
+library(rpart)
+fit <- rpart(critical_temp~range_fie + range_atomic_radius + wtd_entropy_atomic_radius + wtd_std_fie 
+             + wtd_std_atomic_radius + entropy_Valence + wtd_entropy_atomic_mass + entropy_fie + wtd_entropy_Valence
+             + number_of_elements + wtd_gmean_Density + std_fie + entropy_atomic_radius + gmean_Density 
+             + std_atomic_mass + wtd_gmean_Valence + entropy_atomic_mass + mean_atomic_radius + gmean_atomic_radius 
+             + mean_atomic_mass + gmean_atomic_mass + std_FusionHeat + wtd_std_FusionHeat + wtd_mean_atomic_mass 
+             + range_FusionHeat + wtd_gmean_atomic_mass + mean_fie + gmean_fie + wtd_entropy_atomic_radius 
+             + entropy_FusionHeat + mean_Density + wtd_range_FusionHeat + wtd_mean_FusionHeat 
+             + wtd_gmean_atomic_radius,
+             method="anova", data=newd)
+printcp(fit)
+```
+
+```{r plot regressiontree}
+plotcp(fit)
+```
+```{r regressiontree diagram}
+plot(fit, uniform=TRUE,
+     main="Regression Tree for critical_temp ")
+text(fit, use.n=TRUE, all=TRUE, cex=.8)
+```
+```{r pruned regression tree}
+# prune the tree
+pfit<- prune(fit, cp=0.011) 
+plot(pfit, uniform=TRUE,
+     main="Pruned Regression Tree for critical_temp")
+text(pfit, use.n=TRUE, all=TRUE, cex=.8)
+```
